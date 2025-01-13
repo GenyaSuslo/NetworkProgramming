@@ -2,6 +2,7 @@
 #include<Windows.h>
 #include<CommCtrl.h>
 #include<cstdio>
+#include<iostream>
 #include"resource1.h"
 
 
@@ -21,6 +22,9 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//InitCommonControls();
 		HWND hUpDown = GetDlgItem(hwnd, IDC_SPIN_PREFIX);
 		SendMessage(hUpDown, UDM_SETRANGE, 0, MAKELPARAM(30,1));
+		AllocConsole();
+		//freopen("CONOUT$", "w", stdout);
+		//SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
 		
 	}
 		break;
@@ -63,9 +67,18 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 		case IDC_EDIT_PREFIX:
 		{
-			SendMessage(hEditPrefix, WM_GETTEXT, 3, (LPARAM)sz_prefix);
-			DWORD dwIPprefix = UINT_MAX;
-
+			if (HIWORD(wParam) == EN_CHANGE)
+			{
+				SendMessage(hEditPrefix, WM_GETTEXT, 3, (LPARAM)sz_prefix);
+				DWORD dwIPprefix = atoi(sz_prefix);
+				UINT dwIPmask = UINT_MAX;
+				//TODO: 
+				
+				dwIPmask <<= (32 - dwIPprefix);
+				if(dwIPprefix!=0)SendMessage(hIPmask, IPM_SETADDRESS, 0, dwIPmask);
+				//SendMessage(hIPmask, IPM_GETADDRESS, 0, /*(LPARAM)&*/dwIPmask);
+				
+			}
 		}
 		break;
 		case IDOK:
@@ -82,6 +95,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 		break;
 	case WM_CLOSE:
+		FreeConsole();
 		EndDialog(hwnd, 0);
 	}
 	return FALSE;
