@@ -7,10 +7,13 @@
 
 
 BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress);
+LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number);
+
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
-	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, DlgProc, 0);
+	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, (DLGPROC)DlgProc, 0);
 	return 0;
 }
 BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -22,7 +25,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//InitCommonControls();
 		HWND hUpDown = GetDlgItem(hwnd, IDC_SPIN_PREFIX);
 		SendMessage(hUpDown, UDM_SETRANGE, 0, MAKELPARAM(30,1));
-		AllocConsole();
+		//AllocConsole();
 		//freopen("CONOUT$", "w", stdout);
 		//SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
 		
@@ -83,8 +86,26 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 		case IDOK:
 		{
+			CHAR sz_info[SIZE] = "Info:\n";//Здесь будет информация о сети"; //sz - String Zero (NULL - Terminated Line)
+			//CHAR sz_network_address[SIZE]{};
+			//CHAR sz_broadcast_adress[SIZE]{};
+			CHAR sz_number_of_hosts[SIZE]{};
 			
-			CHAR sz_info[SIZE] = "Info:\nЗдесь будет информация о сети"; //sz - String Zero (NULL - Terminated Line)
+			SendMessage(hIPaddress, IPM_GETADDRESS, 0, (LPARAM)&dwIPaddress);
+			SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
+			DWORD dwNetworkAddress = dwIPaddress & dwIPmask;
+			DWORD dwBroadcastAddres = dwNetworkAddress | ~dwIPmask;
+			std::cout << dwNetworkAddress << std::endl;
+			strcat(sz_info, FormatIPaddress("Адрес сети:\t\t", dwNetworkAddress));
+			strcat(sz_info, FormatIPaddress("Широковещательный адрес:", dwBroadcastAddres));
+			/*strcat(sz_info, "Количество IP-адресов:\t");
+			strcat(sz_info, _itoa(dwBroadcastAddres - dwNetworkAddress+1, sz_number_of_hosts,10));
+			strcat(sz_info, "\nКоличество узлов:\t");
+			strcat(sz_info, _itoa(dwBroadcastAddres - dwNetworkAddress-1, sz_number_of_hosts,10));*/
+			strcat(sz_info, FormatMessageWithNumber("Количество IP-адресов:\t", dwBroadcastAddres - dwNetworkAddress + 1));
+			strcat(sz_info, FormatMessageWithNumber("Количество узлов:\t\t", dwBroadcastAddres - dwNetworkAddress - 1));
+
+
 			HWND hInfo = GetDlgItem(hwnd, IDC_STATIC_INFO);
 			SendMessage(hInfo, WM_SETTEXT, 0, (LPARAM)sz_info);
 		}
@@ -95,9 +116,30 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 		break;
 	case WM_CLOSE:
-		FreeConsole();
+		//FreeConsole();
 		EndDialog(hwnd, 0);
 	}
 	return FALSE;
+}
+LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress)
+{
+	CHAR sz_bufer[256]{};
+	sprintf
+	(
+		sz_bufer,
+		"%s\t%i.%i.%i.%i;\n",
+		sz_message,
+		FIRST_IPADDRESS(IPaddress),
+		SECOND_IPADDRESS(IPaddress),
+		THIRD_IPADDRESS(IPaddress),
+		FOURTH_IPADDRESS(IPaddress)
+	);
+		return sz_bufer;
+}
+LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number)
+{
+	CHAR sz_bufer[256]{};
+	sprintf(sz_bufer,"%s%i;\n", sz_message, number);
+	return sz_bufer;
 }
 
