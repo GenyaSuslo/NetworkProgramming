@@ -5,10 +5,17 @@
 #include<iostream>
 #include"resource1.h"
 
+#define IDC_COLUMN_NETWORK_ADDRESS 2000
+#define IDC_COLUMN_BROADCAST_ADDRESS 2001
+#define IDC_COLUMN_NUMBER_OF_IP_ADDRESSES 2002
+#define IDC_COLUMN_NUMBER_OF_HOSTS 2003
+
 
 BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress);
 LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number);
+VOID InitLVCcolumn(LPLVCOLUMN column, LPSTR text, INT subitem);
 
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
@@ -110,12 +117,18 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(hInfo, WM_SETTEXT, 0, (LPARAM)sz_info);
 		}
 		break;
+		case IDC_BUTTON_SUBNETS:
+			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_SUBNETS), hwnd, (DLGPROC)DlgProcSubnets, 0);
+		{
+
+		}
+			break;
 		case IDCANCEL: EndDialog(hwnd, 0);
 			break;
 		}
 	}
 		break;
-	case WM_CLOSE:
+		case WM_CLOSE:
 		//FreeConsole();
 		EndDialog(hwnd, 0);
 	}
@@ -141,5 +154,43 @@ LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number)
 	CHAR sz_bufer[256]{};
 	sprintf(sz_bufer,"%s%i;\n", sz_message, number);
 	return sz_bufer;
+}
+BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	static HWND hList = GetDlgItem(hwnd, IDC_LIST_SUBNETS);
+	static LVCOLUMN lvcNetworkAddress;
+	static LVCOLUMN lvcBroadcastAddress;
+	static LVCOLUMN lvcNumberOfIPAddresses;
+	static LVCOLUMN lvcNumberOfHosts;
+	InitLVCcolumn(&lvcNetworkAddress,(LPSTR)"Адрес сети",0);
+	InitLVCcolumn(&lvcBroadcastAddress,(LPSTR)"Широковещательный адрес",1);
+	InitLVCcolumn(&lvcNumberOfIPAddresses,(LPSTR)"Количество IP адресов",2);
+	InitLVCcolumn(&lvcNumberOfHosts, (LPSTR) "Количество узлов",3);
+	
+	
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+		SendMessage(hList, LVM_INSERTCOLUMN, 0, (LPARAM)&lvcNetworkAddress);
+		SendMessage(hList, LVM_INSERTCOLUMN, 1, (LPARAM)&lvcBroadcastAddress);
+		SendMessage(hList, LVM_INSERTCOLUMN, 2, (LPARAM)&lvcNumberOfIPAddresses);
+		SendMessage(hList, LVM_INSERTCOLUMN, 3, (LPARAM)&lvcNumberOfHosts);
+		break;
+	case WM_COMMAND:
+		break;
+	case WM_CLOSE:
+		EndDialog(hwnd, 0);
+	}
+	return FALSE;
+}
+
+VOID InitLVCcolumn(LPLVCOLUMN column, LPSTR text, INT subitem)
+{
+	ZeroMemory(column, sizeof(LVCOLUMN));
+	column->mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+	column->cx = 50;
+	column->pszText = text;
+	column->iSubItem = subitem;
+	column->fmt = LVCFMT_LEFT;
 }
 
