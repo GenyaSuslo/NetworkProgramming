@@ -16,6 +16,7 @@ BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress);
 LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number);
 VOID InitLVCcolumn(LPLVCOLUMN column, LPSTR text, INT subitem);
+LPSTR FormatLastError();
 
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
@@ -42,8 +43,9 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		AllocConsole();
 		freopen("CONOUT$", "w", stdout);
 		SendMessage(hIPaddress, IPM_SETADDRESS, 0, 0xc0a864c8); //отображаем ip при старте
+		std::cout << "WM_INITDIALOG:\n";
+		std::cout << dwIPmask << std::endl;
 		//SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
-		
 	}
 		break;
 	case WM_COMMAND:
@@ -60,7 +62,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				else if (first < 192)dwIPmask = MAKEIPADDRESS(255, 255, 0, 0);
 				else if (first < 224)dwIPmask = MAKEIPADDRESS(255, 255, 255, 0);
 				SendMessage(hIPmask, IPM_SETADDRESS, 0, dwIPmask);
-				SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPaddress);
+				SendMessage(hIPaddress, IPM_GETADDRESS, 0, (LPARAM)&dwIPaddress);
 				std::cout <<"IP-addres:\t" << dwIPaddress <<"\n";
 			}
 		}
@@ -69,7 +71,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			if (HIWORD(wParam) == EN_CHANGE)
 			{
-				SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM) & dwIPmask);
+				SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
 				int i = 1;
 				for (; dwIPmask <<= 1; i++);
 				sprintf(sz_prefix, "%i", i);
@@ -87,10 +89,12 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				UINT dwIPmask = UINT_MAX;
 				//TODO: 
 				
+				//dwIPmask >>= (32 - dwPrefix);
 				dwIPmask <<= (32 - dwPrefix);
+				std::cout << "IDC_EDIT_PREFIX:\n";
+				std::cout << std::hex << dwIPmask << "\n";
 				if(dwPrefix!=0)SendMessage(hIPmask, IPM_SETADDRESS, 0, dwIPmask);
 				//SendMessage(hIPmask, IPM_GETADDRESS, 0, /*(LPARAM)&*/dwIPmask);
-				
 			}
 		}
 		break;
@@ -105,7 +109,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(hIPmask, IPM_GETADDRESS, 0, (LPARAM)&dwIPmask);
 			DWORD dwNetworkAddress = dwIPaddress & dwIPmask;
 			DWORD dwBroadcastAddres = dwNetworkAddress | ~dwIPmask;
-			//std::cout << dwNetworkAddress << std::endl;
+			std::cout << dwNetworkAddress << std::endl;
 			strcat(sz_info, FormatIPaddress("Адрес сети:\t\t", dwNetworkAddress));
 			strcat(sz_info, FormatIPaddress("Широковещательный адрес:", dwBroadcastAddres));
 			/*strcat(sz_info, "Количество IP-адресов:\t");
@@ -121,10 +125,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 		case IDC_BUTTON_SUBNETS:
-			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_SUBNETS), hwnd, (DLGPROC)DlgProcSubnets, 0);
-		{
-
-		}
+			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG_SUBNETS), hwnd, (DLGPROC)DlgProcSubnets, 0);//TODO:1
 			break;
 		case IDCANCEL: EndDialog(hwnd, 0);
 			break;
@@ -136,6 +137,20 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		EndDialog(hwnd, 0);
 	}
 	return FALSE;
+}
+CHAR* FormatIPaddress(DWORD IPaddress) //TODO:2
+{
+	CHAR sz_bufer[256]{};
+	sprintf
+	(
+		sz_bufer,
+		"%i.%i.%i.%i",
+		FIRST_IPADDRESS(IPaddress),
+		SECOND_IPADDRESS(IPaddress),
+		THIRD_IPADDRESS(IPaddress),
+		FOURTH_IPADDRESS(IPaddress)
+	);
+		return sz_bufer;
 }
 LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress)
 {
@@ -150,7 +165,7 @@ LPSTR FormatIPaddress(CONST CHAR* sz_message, DWORD IPaddress)
 		THIRD_IPADDRESS(IPaddress),
 		FOURTH_IPADDRESS(IPaddress)
 	);
-		return sz_bufer;
+	return sz_bufer;
 }
 LPSTR FormatMessageWithNumber(CONST CHAR* sz_message, DWORD number)
 {
@@ -165,7 +180,10 @@ BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	static LVCOLUMN lvcBroadcastAddress;
 	static LVCOLUMN lvcNumberOfIPAddresses;
 	static LVCOLUMN lvcNumberOfHosts;
+	static INT iColumnID = 0; //TODO:3
+
 	static LVITEM lvItem;
+
 	InitLVCcolumn(&lvcNetworkAddress, (LPSTR)"Адрес сети", 0);
 	InitLVCcolumn(&lvcBroadcastAddress, (LPSTR)"Широковещательный адрес", 1);
 	InitLVCcolumn(&lvcNumberOfIPAddresses, (LPSTR)"Количество IP адресов", 2);
@@ -177,10 +195,21 @@ BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 	{
 		hList = GetDlgItem(hwnd, IDC_LIST_SUBNETS);
+		iColumnID = SendMessage(hList, LVM_INSERTCOLUMN, 0, (LPARAM)&lvcNetworkAddress); //TODO:4
+		std::cout << FormatLastError() << std::endl;
+		iColumnID = SendMessage(hList, LVM_INSERTCOLUMN, 1, (LPARAM)&lvcBroadcastAddress);
+		std::cout << FormatLastError() << std::endl;
+		iColumnID = SendMessage(hList, LVM_INSERTCOLUMN, 2, (LPARAM)&lvcNumberOfIPAddresses);
+		std::cout << FormatLastError() << std::endl;
+		iColumnID = SendMessage(hList, LVM_INSERTCOLUMN, 3, (LPARAM)&lvcNumberOfHosts);
+		std::cout << FormatLastError() << std::endl;
+
 		SendMessage(hList, LVM_INSERTCOLUMN, 0, (LPARAM)&lvcNetworkAddress);
 		SendMessage(hList, LVM_INSERTCOLUMN, 1, (LPARAM)&lvcBroadcastAddress);
 		SendMessage(hList, LVM_INSERTCOLUMN, 2, (LPARAM)&lvcNumberOfIPAddresses);
 		SendMessage(hList, LVM_INSERTCOLUMN, 3, (LPARAM)&lvcNumberOfHosts);
+
+		//////////////////////////////////////////////////////////////
 
 		HWND hParent = GetParent(hwnd);
 		HWND hIPaddress = GetDlgItem(hParent, IDC_IPADDRESS);
@@ -217,32 +246,41 @@ BOOL CALLBACK DlgProcSubnets(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			DWORD dwClassAddress = dwIPaddress & dwDefaultMask;
 			DWORD dwDelta = dwPrefix - dwDefaultPrefix;
 			DWORD dwNumberOfSubnets = 1;
-			for (; dwDelta > 0;dwDelta--)dwNumberOfSubnets *= 2;
-			if (dwNumberOfSubnets == 0)dwNumberOfSubnets = 0;
+			for (; dwDelta > 0; dwDelta--)
+				dwNumberOfSubnets *= 2;
+			if (dwNumberOfSubnets == 1)
+				dwNumberOfSubnets = 0;
 			std::cout << dwDelta << std::endl;
 			std::cout << dwNumberOfSubnets << std::endl;
 
 			CHAR sz_message[256]{};
 			DWORD dwHostBits = 32 - dwPrefix;
 			DWORD dwNetworkCapacity = pow(2, dwHostBits);
+			std::cout << dwDelta << std::endl;
+			std::cout << dwNumberOfSubnets << std::endl;
 			sprintf(sz_message, "Сеть класса %s разделена на %i подсетей, по %i IP-адресов", sz_class, dwNumberOfSubnets, dwNetworkCapacity);
 			SendMessage(GetDlgItem(hwnd, IDC_STATIC_NUMBER_OF_SUBNETS), WM_SETTEXT, 0, (LPARAM)sz_message);
 
-			for (DWORD i=0, dwNetworkAddress = dwClassAddress; i<dwNumberOfSubnets; i++, dwNetworkAddress+=dwNetworkCapacity)
+			for (DWORD i = 0, dwNetworkAddress = dwClassAddress; i < dwNumberOfSubnets; i++, dwNetworkAddress += dwNetworkCapacity)
 			{
-				LPSTR szNetworkAddress = NULL;
+				//LPSTR szNetworkAddress = NULL; 
+				//TODO:5
+				//szNetworkAddress = FormatIPaddress("", dwNetworkAddress);
+				CHAR szNetworkAddress[256];
 				//_itoa(dwNetworkCapacity , sz_IP_address, 10);
-				szNetworkAddress = FormatIPaddress("", dwNetworkAddress);
+				strcpy(szNetworkAddress, FormatIPaddress(dwNetworkAddress));
 				//LVITEM lvItem;
 				ZeroMemory(&lvItem, sizeof(lvItem));
+				//lvItem.pszText = FormatIPaddress(dwNetworkAddress);
 				lvItem.pszText =szNetworkAddress;
 				lvItem.mask = LVIF_TEXT | LVIF_STATE;
-				lvItem.stateMask = 0;
-				lvItem.iSubItem = 0;
-				lvItem.state = 0;
+				//lvItem.stateMask = 0;
+				//lvItem.iSubItem = 0;
+				//lvItem.state = 0;
 				lvItem.iItem = i;
-
+				std::cout << lvItem.pszText << std::endl;
 				SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem);
+				std::cout << FormatLastError() << std::endl;
 			}
 		}
 	}
@@ -265,9 +303,25 @@ VOID InitLVCcolumn(LPLVCOLUMN column, LPSTR text, INT subitem)
 {
 	ZeroMemory(column, sizeof(LVCOLUMN));
 	column->mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-	column->cx = 100;
+	column->cx = 120;
 	column->pszText = text;
 	column->iSubItem = subitem;
 	column->fmt = LVCFMT_LEFT;
+}
+LPSTR FormatLastError() //TODO:6
+{
+	DWORD dwErrorMessageID = GetLastError();
+	LPSTR lpszMessageBuffer = NULL;
+	DWORD dwSize = FormatMessage
+	(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dwErrorMessageID,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_RUSSIAN_RUSSIA),
+		(LPSTR)&lpszMessageBuffer,
+		0,
+		NULL
+	);
+	return lpszMessageBuffer;
 }
 
