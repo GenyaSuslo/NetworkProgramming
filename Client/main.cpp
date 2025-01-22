@@ -106,11 +106,8 @@ void main()
 	if (iResult == SOCKET_ERROR)
 	{
 		cout << "shutdown failed with error #" << WSAGetLastError() << endl;
-		closesocket(ConnectSocket);
 		WSACleanup();
+		closesocket(ConnectSocket);
 	}
-
 	system("PAUSE");
-
-
 }
