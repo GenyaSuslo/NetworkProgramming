@@ -11,6 +11,42 @@ using std::endl;
 
 #pragma comment (lib, "Ws2_32.lib")
 
+union ClientSocketData
+{
+	SOCKADDR client_socket;
+	unsigned long long data;
+	ClientSocketData(SOCKADDR client_socket)
+	{
+		this->client_socket = client_socket;
+	};
+	unsigned long long get_data()const
+	{
+		return data;
+	};
+	unsigned short get_port()const
+	{
+		/*int i_port = (data>>16) & 0xffff;
+		return i_port;*/
+		return (unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1];
+	}
+	char* get_socket(char* sz_client_name)const
+	{
+		sprintf
+		(
+			sz_client_name,
+			"%i.%i.%i.%i:%i",
+			(unsigned char)client_socket.sa_data[2],
+			(unsigned char)client_socket.sa_data[3],
+			(unsigned char)client_socket.sa_data[4],
+			(unsigned char)client_socket.sa_data[5],
+			get_port()
+			//(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
+			//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
+		);
+		return sz_client_name;
+	}
+};
+
 void main()
 {
 	setlocale(LC_ALL, "");
@@ -96,19 +132,24 @@ void main()
 		}
 		//cout << "getsocketname error #" << WSAGetLastError() << endl;
 		//getsockname(ClientSocket, &client_socket, &namelen);
-		sprintf
-		(
-			sz_client_name,
-			"%i.%i.%i.%i:%i",
-			(unsigned char)client_socket.sa_data[2],
-			(unsigned char)client_socket.sa_data[3],
-			(unsigned char)client_socket.sa_data[4],
-			(unsigned char)client_socket.sa_data[5],
-			(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
-			//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
-		);
-		cout << sz_client_name << endl;
-
+		//sprintf
+		//(
+		//	sz_client_name,
+		//	"%i.%i.%i.%i:%i",
+		//	(unsigned char)client_socket.sa_data[2],
+		//	(unsigned char)client_socket.sa_data[3],
+		//	(unsigned char)client_socket.sa_data[4],
+		//	(unsigned char)client_socket.sa_data[5],
+		//	(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
+		//	//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
+		//	
+		//);
+		//cout << sz_client_name << endl;
+		//ClientSocketData client_data(client_socket);
+		//cout <<"Client: " << client_data.get_socket(sz_client_name) << endl;
+		 
+		cout << "Client:" << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
+		//cout << client_data.get_data() << endl;
 		//closesocket(ClientSocket);
 		//closesocket(ListenSocket);
 
