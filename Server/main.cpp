@@ -4,7 +4,7 @@
 using std::cin;
 using std::cout;
 using std::endl;
-
+//Client
 #define DEFAULT_PORT "27015"
 
 #define BUFFER_SIZE 1500
@@ -15,7 +15,7 @@ void main()
 {
 	setlocale(LC_ALL, "");
 	//1.Initialization WinSock
-	
+
 	WSADATA wsaData;
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);// (2,2) version
 	if (iResult != 0)
@@ -81,7 +81,12 @@ void main()
 	//5. Accept connection:
 	do
 	{
-		SOCKET ClientSocket = accept(ListenSocket, NULL, NULL);
+		CHAR sz_client_name[32];
+		int namelen = 32;
+		SOCKADDR client_socket;
+		ZeroMemory(&client_socket, sizeof(client_socket));
+
+		SOCKET ClientSocket = accept(ListenSocket, &client_socket, &namelen);
 		if (ClientSocket == INVALID_SOCKET)
 		{
 			cout << "Accept failed with error #" << WSAGetLastError() << endl;
@@ -89,12 +94,20 @@ void main()
 			WSACleanup();
 			return;
 		}
-		//CHAR sz_client_name[32];
-		int namelen = 0;
-		SOCKADDR client_socket;
-		ZeroMemory(&client_socket, sizeof(client_socket));
-		getsockname(ClientSocket, &client_socket, &namelen);
-		cout << client_socket.sa_data << endl;
+		//cout << "getsocketname error #" << WSAGetLastError() << endl;
+		//getsockname(ClientSocket, &client_socket, &namelen);
+		sprintf
+		(
+			sz_client_name,
+			"%i.%i.%i.%i:%i",
+			(unsigned char)client_socket.sa_data[2],
+			(unsigned char)client_socket.sa_data[3],
+			(unsigned char)client_socket.sa_data[4],
+			(unsigned char)client_socket.sa_data[5],
+			(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
+
+		);
+		cout << sz_client_name << endl;
 
 		//closesocket(ClientSocket);
 		//closesocket(ListenSocket);
@@ -140,6 +153,6 @@ void main()
 		}
 		closesocket(ClientSocket);
 	} while (true);
-		WSACleanup();
-		system("PAUSE");
+	WSACleanup();
+	system("PAUSE");
 }

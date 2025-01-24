@@ -4,7 +4,7 @@
 using std::cin;
 using std::cout;
 using std::endl;
-
+//Server
 #define DEFAULT_PORT	"27015"
 
 #define BUFFER_SIZE		1500
@@ -20,17 +20,18 @@ void main()
 	if (iResult != 0)
 	{
 		cout << "WinSock initialization fauled with error #" << iResult << endl;
-	}//2. Create socket:
+	}
+	//2. Create socket:
 	addrinfo* result = NULL;
 	addrinfo* ptr = NULL;
 	addrinfo hInst;
-	//2.1 ѕолу€аем адрес текущего узла
+	//2.1 ѕолучаем адрес текущего узла
 	ZeroMemory(&hInst, sizeof(hInst));
 	hInst.ai_family = AF_UNSPEC;
 	hInst.ai_socktype = SOCK_STREAM;
 	hInst.ai_protocol = IPPROTO_TCP;
 
-	iResult = getaddrinfo("192.168.1.10", DEFAULT_PORT, &hInst, &result);
+	iResult = getaddrinfo("192.168.43.28", DEFAULT_PORT, &hInst, &result);
 	if (iResult != 0)
 	{
 		cout << "getaddrinfo() failed with error #" << WSAGetLastError() << endl;
