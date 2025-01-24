@@ -104,8 +104,8 @@ void main()
 			(unsigned char)client_socket.sa_data[3],
 			(unsigned char)client_socket.sa_data[4],
 			(unsigned char)client_socket.sa_data[5],
-			(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
-
+			(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
+			//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
 		);
 		cout << sz_client_name << endl;
 
