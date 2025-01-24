@@ -149,6 +149,7 @@ void main()
 		//cout <<"Client: " << client_data.get_socket(sz_client_name) << endl;
 		 
 		cout << "Client:" << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
+
 		//cout << client_data.get_data() << endl;
 		//closesocket(ClientSocket);
 		//closesocket(ListenSocket);
