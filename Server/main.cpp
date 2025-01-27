@@ -4,7 +4,7 @@
 using std::cin;
 using std::cout;
 using std::endl;
-//Client
+//Server
 #define DEFAULT_PORT "27015"
 
 #define BUFFER_SIZE 1500
@@ -130,25 +130,25 @@ void main()
 			WSACleanup();
 			return;
 		}
-		//cout << "getsocketname error #" << WSAGetLastError() << endl;
-		//getsockname(ClientSocket, &client_socket, &namelen);
-		//sprintf
-		//(
-		//	sz_client_name,
-		//	"%i.%i.%i.%i:%i",
-		//	(unsigned char)client_socket.sa_data[2],
-		//	(unsigned char)client_socket.sa_data[3],
-		//	(unsigned char)client_socket.sa_data[4],
-		//	(unsigned char)client_socket.sa_data[5],
-		//	(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
-		//	//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
-		//	
-		//);
-		//cout << sz_client_name << endl;
-		//ClientSocketData client_data(client_socket);
-		//cout <<"Client: " << client_data.get_socket(sz_client_name) << endl;
+		/*cout << "getsocketname error #" << WSAGetLastError() << endl;
+		getsockname(ClientSocket, &client_socket, &namelen);
+		sprintf
+		(
+			sz_client_name,
+			"%i.%i.%i.%i:%i",
+			(unsigned char)client_socket.sa_data[2],
+			(unsigned char)client_socket.sa_data[3],
+			(unsigned char)client_socket.sa_data[4],
+			(unsigned char)client_socket.sa_data[5],
+			(unsigned char)client_socket.sa_data[0] << 8 | (unsigned char)client_socket.sa_data[1]
+			//(unsigned char)client_socket.sa_data[0] * 256 + (unsigned char)client_socket.sa_data[1]
+			
+		);
+		cout << sz_client_name << endl;
+		ClientSocketData client_data(client_socket);
+		cout <<"Client: " << client_data.get_socket(sz_client_name) << endl;*/
 		 
-		cout << "Client:" << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
+		cout << "Client: " << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
 
 		//cout << client_data.get_data() << endl;
 		//closesocket(ClientSocket);
@@ -159,12 +159,14 @@ void main()
 		int received = 0;
 		do
 		{
+			ZeroMemory(recvbuffer, BUFFER_SIZE);
 			received = recv(ClientSocket, recvbuffer, BUFFER_SIZE, 0);
 			if (received > 0)
 			{
-				cout << "Bytes received:  \t " << received << endl;
-				cout << "Received message: \t" << recvbuffer << endl;
-				int iSendResult = send(ClientSocket, "Привет Client!", received, 0);
+				cout << "Bytes received: " << received << endl;
+				cout << "Received message: " << recvbuffer << endl;
+				int iSendResult = send(ClientSocket, recvbuffer, received, 0);
+				//int iSendResult = send(ClientSocket, "Привет Client!", received, 0);
 				if (iSendResult == SOCKET_ERROR)
 				{
 					cout << "Send failed with error #" << WSAGetLastError() << endl;
