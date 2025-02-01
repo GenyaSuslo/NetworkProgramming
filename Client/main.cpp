@@ -31,7 +31,7 @@ void main()
 	hInst.ai_socktype = SOCK_STREAM;
 	hInst.ai_protocol = IPPROTO_TCP;
 
-	iResult = getaddrinfo("192.168.43.28", DEFAULT_PORT, &hInst, &result);
+	iResult = getaddrinfo("10.8.1.10", DEFAULT_PORT, &hInst, &result);
 	if (iResult != 0)
 	{
 		cout << "getaddrinfo() failed with error #" << WSAGetLastError() << endl;

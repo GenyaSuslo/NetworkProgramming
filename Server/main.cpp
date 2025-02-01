@@ -5,9 +5,11 @@ using std::cin;
 using std::cout;
 using std::endl;
 //Server
-#define DEFAULT_PORT "27015"
+#define DEFAULT_PORT	"27015"
 
-#define BUFFER_SIZE 1500
+#define BUFFER_SIZE		1500
+
+#define MAX_CONNECTIONS 5
 
 #pragma comment (lib, "Ws2_32.lib")
 
@@ -46,7 +48,13 @@ union ClientSocketData
 		return sz_client_name;
 	}
 };
-void HandleClient(SOCKET ClientSocket);
+void HandleClient(LPVOID lParam);
+SOCKET ClientSocket;
+SOCKET client_sockets[MAX_CONNECTIONS]{};
+HANDLE client_handles[MAX_CONNECTIONS]{};
+DWORD dw_thread_id[MAX_CONNECTIONS]{};
+int* client_number[MAX_CONNECTIONS]{};
+int number_of_clients = 0;
 
 void main()
 {
@@ -118,32 +126,45 @@ void main()
 	//5. Accept connection:
 	do
 	{
+		//int number_of_clients = 0;
 		CHAR sz_client_name[32];
 		int namelen = 32;
 		SOCKADDR client_socket;
 		ZeroMemory(&client_socket, sizeof(client_socket));
 
-		SOCKET ClientSocket = accept(ListenSocket, &client_socket, &namelen);
-		if (ClientSocket == INVALID_SOCKET)
+		//ClientSocket = accept(ListenSocket, &client_socket, &namelen);
+		if (number_of_clients < MAX_CONNECTIONS)
 		{
-			cout << "Accept failed with error #" << WSAGetLastError() << endl;
-			closesocket(ListenSocket);
-			//WSACleanup();
-			//return;
+			client_number[number_of_clients] = (int*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(int));
+			*client_number[number_of_clients] = number_of_clients;
+
+			client_sockets[number_of_clients] = accept(ListenSocket, &client_socket, &namelen);
+			if (ClientSocket == INVALID_SOCKET)
+			{
+				cout << "Accept failed with error #" << WSAGetLastError() << endl;
+				//closesocket(ListenSocket);
+				//WSACleanup();
+				//return;
+			}
+			//HandleClient(ClientSocket);
+			//cout << "getsocketname error #" << WSAGetLastError() << endl;
+			client_handles[number_of_clients] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)HandleClient, client_number[number_of_clients], 0, 0);
+			number_of_clients++;
 		}
-		HandleClient(ClientSocket);
-		//cout << "getsocketname error #" << WSAGetLastError() << endl;
 	} while (true);
 	WSACleanup();
 	system("PAUSE");
 }
 
-void HandleClient(SOCKET ClientSocket)
+void HandleClient(LPVOID lParam)
 {
+	int i = *((int*)lParam);
+
 	CHAR sz_client_name[32];
 	int namelen = 32;
 	SOCKADDR client_socket;
-	getpeername(ClientSocket, &client_socket, &namelen);
+	//getpeername(ClientSocket, &client_socket, &namelen);
+	getpeername(client_sockets[i], &client_socket, &namelen);
 	/*sprintf
 	(
 		sz_client_name,
@@ -159,7 +180,7 @@ void HandleClient(SOCKET ClientSocket)
 	cout << sz_client_name << endl;
 	ClientSocketData client_data(client_socket);
 	cout << "Client: " << client_data.get_socket(sz_client_name) << endl;*/
-		cout << "Client: " << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
+	cout << "Client: " << ClientSocketData(client_socket).get_socket(sz_client_name) << endl;
 
 	//cout << client_data.get_data() << endl;
 	//closesocket(ClientSocket);
@@ -171,18 +192,18 @@ void HandleClient(SOCKET ClientSocket)
 	do
 	{
 		ZeroMemory(recvbuffer, BUFFER_SIZE);
-		received = recv(ClientSocket, recvbuffer, BUFFER_SIZE, 0);
+		received = recv(client_sockets[i], recvbuffer, BUFFER_SIZE, 0);
 		if (received > 0)
 		{
 			cout << "Bytes received: " << received << endl;
-			cout << "Message from : "<<sz_client_name<<":\t" << recvbuffer << endl;
+			cout << "Message from : " << sz_client_name << ":\t" << recvbuffer << endl;
 			//cout << "Received message: " << recvbuffer << endl;
-			int iSendResult = send(ClientSocket, recvbuffer, received, 0);
+			int iSendResult = send(client_sockets[i], recvbuffer, received, 0);
 			//int iSendResult = send(ClientSocket, "Привет Client!", received, 0);
 			if (iSendResult == SOCKET_ERROR)
 			{
 				cout << "Send failed with error #" << WSAGetLastError() << endl;
-				closesocket(ClientSocket);
+				closesocket(client_sockets[i]);
 				WSACleanup();
 				return;
 			}
@@ -208,5 +229,5 @@ void HandleClient(SOCKET ClientSocket)
 		cout << "shutdown failed with error #" << WSAGetLastError() << endl;
 	}
 	closesocket(ClientSocket);
-	
+
 }
