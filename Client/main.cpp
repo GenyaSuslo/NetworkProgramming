@@ -39,7 +39,7 @@ void main()
 	}
 
 	//2.2. Create a Socket
-	SOCKET ConnectSocket = socket(hInst.ai_family, hInst.ai_socktype, hInst.ai_protocol);
+	SOCKET ConnectSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ConnectSocket == INVALID_SOCKET)
 	{
 		cout << "Socket creation failed with error #" << WSAGetLastError() << endl;
@@ -110,6 +110,12 @@ void main()
 			cout << "Connection closed" << endl;
 		}
 		else cout << "Receive failed with error #" << WSAGetLastError() << endl;
+		if (strcmp(recvbuffer, "No free connections left") == 0)
+		{
+			cout << recvbuffer << endl;
+			//shutdown(ConnectSocket, SD_BOTH);
+			break;
+		}
 		//} while (recived > 0);
 		if (!exit)
 		{

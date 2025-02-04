@@ -9,7 +9,7 @@ using std::endl;
 
 #define BUFFER_SIZE		1500
 
-#define MAX_CONNECTIONS 5
+#define MAX_CONNECTIONS 3
 
 #pragma comment (lib, "Ws2_32.lib")
 
@@ -151,6 +151,17 @@ void main()
 			client_handles[number_of_clients] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)HandleClient, client_number[number_of_clients], 0, 0);
 			number_of_clients++;
 		}
+		else
+		{
+			SOCKET extra_socket = accept(ListenSocket, &client_socket, &namelen);
+			char recvextrabuffer[BUFFER_SIZE]{};
+			recv(extra_socket, recvextrabuffer, BUFFER_SIZE, 0);
+			char message[] = "No free connections left";
+			send(extra_socket, message, sizeof(message), 0);
+			shutdown(extra_socket, SD_BOTH);
+			closesocket(extra_socket);
+			cout << ClientSocketData(client_socket).get_socket(sz_client_name) << "was disconnected" << endl;
+		}
 	} while (true);
 	WSACleanup();
 	system("PAUSE");
@@ -228,6 +239,5 @@ void HandleClient(LPVOID lParam)
 	{
 		cout << "shutdown failed with error #" << WSAGetLastError() << endl;
 	}
-	closesocket(ClientSocket);
-
+	closesocket(client_sockets[i]);
 }
