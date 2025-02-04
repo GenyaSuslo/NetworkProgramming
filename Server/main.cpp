@@ -50,6 +50,7 @@ union ClientSocketData
 };
 void HandleClient(LPVOID lParam);
 void PrintNumberOfClients();
+int FindFreeSlot();
 SOCKET ClientSocket;
 SOCKET client_sockets[MAX_CONNECTIONS]{};
 HANDLE client_handles[MAX_CONNECTIONS]{};
@@ -137,10 +138,17 @@ void main()
 		//ClientSocket = accept(ListenSocket, &client_socket, &namelen);
 		if (number_of_clients < MAX_CONNECTIONS)
 		{
-			client_number[number_of_clients] = (int*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(int));
-			*client_number[number_of_clients] = number_of_clients;
+			int i = FindFreeSlot();
+			if (client_number[i]==NULL)
+			{
+				//client_number[number_of_clients] = (int*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(int));
+				//*client_number[number_of_clients] = number_of_clients;
 
-			client_sockets[number_of_clients] = accept(ListenSocket, &client_socket, &namelen);
+				client_number[i] = (int*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(int));
+				*client_number[i] = number_of_clients;
+			}
+
+			client_sockets[i] = accept(ListenSocket, &client_socket, &namelen);
 			if (ClientSocket == INVALID_SOCKET)
 			{
 				cout << "Accept failed with error #" << WSAGetLastError() << endl;
@@ -150,7 +158,7 @@ void main()
 			}
 			//HandleClient(ClientSocket);
 			//cout << "getsocketname error #" << WSAGetLastError() << endl;
-			client_handles[number_of_clients] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)HandleClient, client_number[number_of_clients], 0, 0);
+			client_handles[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)HandleClient, client_number[i], 0, 0);
 			number_of_clients++;
 		}
 		else
@@ -243,6 +251,12 @@ void HandleClient(LPVOID lParam)
 		cout << "shutdown failed with error #" << WSAGetLastError() << endl;
 	}
 	closesocket(client_sockets[i]);
+	HANDLE threadHandle = client_handles[i];
+	client_sockets[i] = NULL;
+	client_handles[i] = NULL;
+	number_of_clients--;
+	PrintNumberOfClients();
+	CloseHandle(threadHandle);
 }
 
 void PrintNumberOfClients()
@@ -254,5 +268,12 @@ void PrintNumberOfClients()
 	SetConsoleCursorPosition(hConsole, COORD{ 85, 0 });
 	cout << "Количество клиентов: " << number_of_clients << endl;
 	SetConsoleCursorPosition(hConsole, consoleinfo.dwCursorPosition);
-
+}
+int FindFreeSlot()
+{
+	for (int i = 0; i < MAX_CONNECTIONS; i++)
+	{
+		if (client_handles[i] == NULL && client_sockets[i] == NULL)return i;
+	}
+	return -1;
 }
